@@ -3,10 +3,12 @@ import matplotlib.pyplot as plt
 import requests
 import platform
 from datetime import datetime
+from utils import filter_data
 
 account = ""
 hallticket = ""
 all_data = dict()
+EXCLUDED_MERCHANTS = ["体育"]
 
 if __name__ == "__main__":
     # 读入账户信息
@@ -72,17 +74,19 @@ if __name__ == "__main__":
     data = json.loads(response.text)["rows"]
 
     # 整理数据
-    for item in data:
+    filtered_data = [item for item in data if item["TRANAMT"] < 0 and filter_data(item, EXCLUDED_MERCHANTS)]
+
+    for item in filtered_data:
         try:
-            if(item["TRANAMT"] < 0):
-                if item["MERCNAME"].strip() in all_data:
-                    all_data[item["MERCNAME"].strip()] += abs(item["TRANAMT"])
-                else: 
-                    all_data[item["MERCNAME"].strip()] = abs(item["TRANAMT"])
+            merchant = item["MERCNAME"].strip()
+            if merchant in all_data:
+                all_data[merchant] += abs(item["TRANAMT"])
+            else:
+                all_data[merchant] = abs(item["TRANAMT"])
         except Exception as e:
             pass
     all_data = {k: round(v, 2) for k, v in all_data.items()}
-    summary = f"统计总种类数：{len(all_data)}\n总消费次数：{len(data)}\n总消费金额：{round(sum(all_data.values()), 1)}"
+    summary = f"统计总种类数：{len(all_data)}\n总消费次数：{len(filtered_data)}\n总消费金额：{round(sum(all_data.values()), 1)}"
     print(summary)
     # 输出结果
     all_data = dict(sorted(all_data.items(), key=lambda x: x[1], reverse=False))
@@ -105,13 +109,13 @@ if __name__ == "__main__":
     plt.figure(figsize=(12, len(all_data) / 66 * 18))
     plt.barh(list(all_data.keys()), list(all_data.values()))
     for index, value in enumerate(list(all_data.values())):
-        plt.text(value + 0.01 * max(all_data.values()),
+        plt.text(value + 0.01 * max(all_data.values() or [0]),
                 index,
                 str(value),
                 va='center')
         
     # plt.tight_layout()
-    plt.xlim(0, 1.2 * max(all_data.values()))
+    plt.xlim(0, 1.2 * max(all_data.values() or [0]))
     plt.title(f"白鲸大学食堂消费情况\n({post_data['sdate']} 至 {post_data['edate']})")
     plt.xlabel("消费金额（元）")
     plt.text(0.8, 0.1, summary, ha='center', va='center', transform=plt.gca().transAxes)
