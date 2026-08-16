@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pku-annual-eat"
+version = "0.1.0"
+description = "Web API for PKU campus-card spending statistics"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "pydantic>=2.7,<3",
+    "requests>=2.31,<3",
+    "urllib3>=1.26,<2; python_version < '3.10'",
+    "uvicorn[standard]>=0.30,<1",
+]
+
+[project.optional-dependencies]
+test = [
+    "httpx>=0.27,<1",
+    "pytest>=8,<9",
+]
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+addopts = "-q"

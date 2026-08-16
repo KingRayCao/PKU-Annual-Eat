@@ -1,6 +1,19 @@
 # User data
 config.json
 result.png
+legacy/config.json
+legacy/output/
+
+# Web application
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+.vite/
+
+# Local tooling
+.serena/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

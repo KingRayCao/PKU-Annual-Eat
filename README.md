@@ -1,66 +1,107 @@
-# PKU-Annual-Eat
+# 燕园今天的饭
 
-> **推荐使用[此网址](https://eat-at-pku.aiyu.fun/)或[此网址](https://eat.huh.moe/)。其分类和可视化做的不知道比我高到哪里去了。**
-> 
-> **仓库指路：[zhuohaoyu/PKU-Annual-Eat](https://github.com/zhuohaoyu/PKU-Annual-Eat)**
+一个面向北大学生的校园卡消费统计网页。输入校园卡账号、`hallticket` 和日期范围后，可查看消费总览、时间趋势、商户排行与占比、时段热力图及逐笔明细。
 
-一年过去了，你在白鲸食堂里花的钱都花在哪儿了？
+凭证只用于当前查询，不写入文件、浏览器存储或日志。页面提供独立的账号与 `hallticket` 获取指南，查询时可随时打开查看。
 
-## 项目简介
+## 主要功能
 
-> 项目的 idea 来源于 [Rose-max111](https://github.com/Rose-max111)。
+- 按日、周、月查看消费金额与次数趋势
+- 按金额、次数、客单价切换商户排行
+- 通过饼图查看商户消费占比
+- 24 小时消费轨道与“星期 × 小时”热力图
+- 商户、日期、关键词、时段联动筛选
+- 明细排序、分页，以及 CSV、JSON 数据导出
+- 独立的账号与 `hallticket` 获取指南
+- 桌面端和移动端响应式界面
+- 校园卡接口分页、超时、登录失效与异常响应处理
 
-本项目是一个用于统计白鲸大学学生校园卡消费情况的脚本。通过模拟登录大学校园卡网站，获取学生的校园卡消费记录，并通过数据可视化的方式展示。
+## 技术结构
 
-本项目fork自[THU-Annual-Eat](https://github.com/leverimmy/THU-Annual-Eat)，感谢原作者的贡献。
+```text
+backend/
+  app/                         FastAPI、校园卡客户端与交易标准化
+  tests/                       后端测试与接口响应样本
+frontend/
+  public/guides/               页面使用的账号与 Hallticket 指南图片
+  src/app/                     应用入口组件与全局样式
+  src/components/              通用界面组件
+  src/features/transactions/   交易类型、接口、本地导入、统计及测试
+docs/images/legacy/            旧版说明文档使用的历史截图
+legacy/                        保留的旧版命令行实现与本地输出
+```
 
-![demo](./demo.png)
+后端保持原有数据提取协议：向 `https://card.pku.edu.cn/Report/GetPersonTrjn` 提交 `sdate`、`edate`、`account`、`page`、`rows` 表单，并通过 `hallticket` Cookie 认证。
 
-## 使用方法
+`legacy/` 仅用于保留原命令行实现。需要运行时使用 `python legacy/main.py`；其凭证写入 `legacy/config.json`，图表写入 `legacy/output/`，二者均不会提交到版本库。
 
-### 0. 获取account和hallticket
+## 本地运行
 
-首先，登录校园卡账号后，在[白鲸大学校园卡网站](https://card.pku.edu.cn/user/user)获取你的`account`和`hallticket`。方法如下：
-
-![card](./card.png)
-
-点击`账号管理`，在弹出的页面中找到`账号`，复制其值。
-
-![account](./account.png)
-
-`F12` 打开开发者工具，切换到`Network`标签页，然后`Ctrl+R`刷新页面，找到 `GetCardInfoByAccountNoParm` 这个请求，进入`Cookies`选项卡，复制其中`hallticket`字段的**value**，后面会用到。
-
-![hallticket](./hallticket.png)
-
-### 1. 安装依赖
-
-本项目依赖于 `requests`、`matplotlib`，请确保你的 Python 环境中已经安装了这些库。
+环境要求：Python 3.9+、Node.js 20+。
 
 ```bash
-pip install requests matplotlib
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -e ".[test]"
+
+cd frontend
+npm install
+npm run build
+cd ..
+
+uvicorn backend.app.main:app --reload
 ```
 
-### 2. 运行脚本
+打开 <http://127.0.0.1:8000>。构建后的前端由 FastAPI 同一端口托管。
+
+前端开发模式会把 `/api` 代理到 `127.0.0.1:8000`：
 
 ```bash
-python main.py
+# 终端 1
+uvicorn backend.app.main:app --reload
+
+# 终端 2
+cd frontend
+npm run dev
 ```
 
-首次运行时，请输入你的`account`和`hallticket`，会自动保存在 `config.json` 文件中。
+然后打开 <http://127.0.0.1:5173>。
 
-### 3.（可选）修改配置
+### 纯前端运行
 
-如果你想修改`account`或者`hallticket`，可以直接修改 `config.json` 文件。
+仅启动 Vite 前端即可使用本地统计，不需要启动 FastAPI：
 
-```json
-{
-    "account": "你的account",
-    "hallticket": "你的hallticket"
-}
+```bash
+cd frontend
+npm run dev
 ```
 
-## LICENSE
+打开 <http://127.0.0.1:5173>，点击“导入本地 JSON”。支持两种数据格式：
 
-除非另有说明，本仓库的内容采用 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可协议。在遵守许可协议的前提下，您可以自由地分享、修改本文档的内容，但不得用于商业目的。
+- 本页面导出的 JSON（包含 `meta` 和 `transactions`）
+- 校园卡接口保存的原始响应 JSON（包含 `rows`）
 
-如果您认为文档的部分内容侵犯了您的合法权益，请联系项目维护者，我们会尽快删除相关内容。
+原始校园卡响应会在浏览器中完成支出筛选、商户排除、金额转分和时间整理。在线输入账号与 Hallticket 查询仍需要 FastAPI；浏览器安全策略不允许 localhost 页面直接读取校园卡跨域响应或设置其 Cookie。
+
+## 测试
+
+```bash
+python -m pytest
+cd frontend && npm test && npm run build
+```
+
+## 获取账号和 Hallticket
+
+登录[北大校园卡服务大厅](https://card.pku.edu.cn/user/user)，在“账户管理”中复制账号。随后打开浏览器开发者工具的 Network，刷新页面并选择 `GetCardInfoByAccountNoParm` 请求，在 Cookies 中复制 `hallticket` 的值。网页中的独立获取指南提供了完整步骤和截图，可从顶部导航直接打开。
+
+## Docker
+
+```bash
+docker build -t yanyuan-meals .
+docker run --rm -p 8000:8000 yanyuan-meals
+```
+
+## 许可
+
+项目采用 [CC BY-NC-SA 4.0](./LICENSE)，仅允许非商业使用；公开衍生版本需要保留署名并以相同方式共享。

@@ -3,7 +3,13 @@ import matplotlib.pyplot as plt
 import requests
 import platform
 from datetime import datetime
+from pathlib import Path
 from utils import filter_data
+
+LEGACY_DIR = Path(__file__).resolve().parent
+CONFIG_PATH = LEGACY_DIR / "config.json"
+OUTPUT_DIR = LEGACY_DIR / "output"
+RESULT_PATH = OUTPUT_DIR / "result.png"
 
 account = ""
 hallticket = ""
@@ -13,7 +19,7 @@ EXCLUDED_MERCHANTS = ["体育"]
 if __name__ == "__main__":
     # 读入账户信息
     try:
-        with open("config.json", "r", encoding='utf-8') as f:
+        with CONFIG_PATH.open("r", encoding='utf-8') as f:
             config = json.load(f)
             account = config["account"]
             hallticket = config["hallticket"]
@@ -21,7 +27,7 @@ if __name__ == "__main__":
         print("账户信息读取失败，请重新输入")
         account = input("请输入account: ")
         hallticket = input("请输入hallticket: ")
-        with open("config.json", "w", encoding='utf-8') as f:
+        with CONFIG_PATH.open("w", encoding='utf-8') as f:
             json.dump({"account": account, "hallticket": hallticket}, f, indent=4)
 
     # 默认日期
@@ -119,5 +125,6 @@ if __name__ == "__main__":
     plt.title(f"白鲸大学食堂消费情况\n({post_data['sdate']} 至 {post_data['edate']})")
     plt.xlabel("消费金额（元）")
     plt.text(0.8, 0.1, summary, ha='center', va='center', transform=plt.gca().transAxes)
-    plt.savefig("result.png",bbox_inches='tight')
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    plt.savefig(RESULT_PATH, bbox_inches='tight')
     plt.show()

@@ -1,0 +1,11 @@
+.git
+.serena
+.venv
+__pycache__
+*.pyc
+config.json
+result.png
+legacy/config.json
+legacy/output
+frontend/node_modules
+frontend/dist
